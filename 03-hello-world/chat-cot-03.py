@@ -5,6 +5,20 @@ from dotenv import load_dotenv
 from google.genai.types import Content, Part, GenerateContentConfig, Schema, Type
 import json
 
+import anthropic
+
+client = anthropic.Anthropic(
+    # defaults to os.environ.get("ANTHROPIC_API_KEY")
+    api_key="my_api_key",
+)
+message = client.messages.create(
+    model="claude-opus-4-1-20250805",
+    max_tokens=1024,
+    messages=[
+        {"role": "user", "content": "Hello, Claude"}
+    ]
+)
+
 # Load environment variables from .env file
 load_dotenv()
 

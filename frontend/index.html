@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Talk to Piyush (Persona)</title>
+    <style>
+      :root { color-scheme: dark; }
+      body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, 'Helvetica Neue', Arial, 'Noto Sans', 'Apple Color Emoji', 'Segoe UI Emoji'; background: #0b0b0d; color: #e6e6e6; }
+      header { text-align: center; padding: 24px 16px; }
+      h1 { margin: 0 0 8px; font-size: 32px; }
+      p.subtitle { margin: 0; color: #ff6b6b; font-style: italic; }
+      main { max-width: 1000px; margin: 0 auto; padding: 16px; }
+      .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+      .row2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-top: 16px; }
+      .card { background: #121216; border: 1px solid #23232a; border-radius: 12px; padding: 16px; min-height: 140px; opacity: 0.7; }
+      .card.active { border-color: #3b82f6; box-shadow: 0 0 0 1px #3b82f6 inset; opacity: 1; }
+      .card h3 { margin: 0 0 8px; color: #b0b0b8; font-weight: 600; }
+      .card p { margin: 0; white-space: pre-wrap; }
+      .input-bar { display: flex; gap: 12px; align-items: center; margin-top: 24px; background: #121216; border: 1px solid #23232a; border-radius: 999px; padding: 12px; }
+      .input-bar input { flex: 1; background: transparent; border: none; outline: none; color: #e6e6e6; font-size: 16px; padding: 8px 12px; }
+      .input-bar button { width: 44px; height: 44px; border-radius: 50%; border: none; background: #e4472f; color: white; font-size: 18px; cursor: pointer; }
+      .steps { margin-top: 12px; color: #8e8ea0; font-size: 14px; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Talk to Piyush</h1>
+      <p class="subtitle">AI-generated persona for demo purposes only. Not real thoughts.</p>
+    </header>
+    <main>
+      <div class="grid">
+        <div id="card-analyse" class="card"><h3>Analyzing</h3><p class="body"></p></div>
+        <div id="card-think" class="card"><h3>Thinking</h3><p class="body"></p></div>
+        <div id="card-output" class="card"><h3>Building Output</h3><p class="body"></p></div>
+      </div>
+      <div class="row2">
+        <div id="card-validate" class="card"><h3>Validating</h3><p class="body"></p></div>
+        <div id="card-result" class="card"><h3>Final Result</h3><p class="body"></p></div>
+      </div>
+
+      <div class="input-bar">
+        <input id="prompt" placeholder="Ask as if you are on a YouTube live…" />
+        <button id="send">→</button>
+      </div>
+      <div class="steps" id="steps"></div>
+    </main>
+
+    <script>
+      const $ = (sel) => document.querySelector(sel);
+      const card = (step) => $(`#card-${step} .body`);
+      const activate = (step) => {
+        for (const s of ["analyse", "think", "output", "validate", "result"]) {
+          const el = $(`#card-${s}`);
+          if (el) el.classList.toggle('active', s === step);
+        }
+      };
+
+      async function callApi(query) {
+        // Use streaming endpoint if available; fallback to batch.
+        const controller = new AbortController();
+        const res = await fetch('http://localhost:8000/api/chat/stream', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query }),
+          signal: controller.signal,
+        });
+
+        if (res.ok && res.headers.get('Content-Type')?.includes('text/event-stream')) {
+          const reader = res.body.getReader();
+          const decoder = new TextDecoder();
+          let buf = '';
+          while (true) {
+            const { value, done } = await reader.read();
+            if (done) break;
+            buf += decoder.decode(value, { stream: true });
+            const parts = buf.split('\n\n');
+            buf = parts.pop();
+            for (const chunk of parts) {
+              if (!chunk.startsWith('data: ')) continue;
+              const json = chunk.slice(6);
+              try {
+                const stepObj = JSON.parse(json);
+                renderStep(stepObj);
+              } catch {}
+            }
+          }
+          return;
+        }
+
+        // Fallback non-stream
+        const data = await res.json();
+        for (const s of data.steps || []) renderStep(s);
+      }
+
+      function renderStep({ step, content }) {
+        activate(step);
+        const el = card(step);
+        if (el) el.textContent = content || '';
+        const stepsDiv = $('#steps');
+        if (stepsDiv) {
+          const p = document.createElement('div');
+          p.textContent = `${step.toUpperCase()}: ${content}`;
+          stepsDiv.appendChild(p);
+        }
+      }
+
+      $('#send').addEventListener('click', async () => {
+        const input = $('#prompt');
+        const q = (input.value || '').trim();
+        if (!q) return;
+        // clear UI
+        for (const s of ["analyse", "think", "output", "validate", "result"]) {
+          const el = card(s); if (el) el.textContent = '';
+          const c = $(`#card-${s}`); if (c) c.classList.remove('active');
+        }
+        $('#steps').innerHTML = '';
+        activate('analyse');
+        await callApi(q);
+      });
+    </script>
+  </body>
+  </html>
