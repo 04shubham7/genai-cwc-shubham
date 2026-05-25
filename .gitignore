@@ -1,18 +1,65 @@
-# Virtual env
+# Python project ignores
+.Python
+
+# Virtual environments
 venv/
 .venv/
-.deps/
+.env/
+.venv*/
+.venv/*
 
-# Python caches
+# Python caches and packaging
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
 *.pyo
 *.pyd
+*.pyc
 *.pytest_cache/
+*.cache/
+pip-wheel-metadata/
+*.egg-info/
+dist/
+build/
+eggs/
+parts/
+sdist/
+wheels/
+share/python-wheels/
+*.egg
 
-# VS Code
+# Test and coverage
+.tox/
+*.coverage
+*.coverage.*
+.coverage
+coverage.xml
+htmlcov/
+.pytest_cache/
+
+# IDEs and editors
 .vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+/.ropeproject
 
-# Local env files
+# Jupyter
+.ipynb_checkpoints
+
+# Logs
+*.log
+logs/
+
+# Environment variables and secrets
 .env
 .env.*
+.env.local
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Docker
+docker-compose.override.yml
+
