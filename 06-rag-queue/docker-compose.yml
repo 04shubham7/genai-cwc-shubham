@@ -4,3 +4,6 @@ services:
     image: valkey/valkey
     ports:
       - "6379:6379"
+
+  vector-db:
+    image: qdrant/qdrant

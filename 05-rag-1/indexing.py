@@ -12,6 +12,7 @@ from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_qdrant import QdrantVectorStore
+import traceback
 
 RUN_INDEXING = "--run" in sys.argv
 FORCE_RECREATE = "--force-recreate" in sys.argv
@@ -80,6 +81,7 @@ except Exception as exc:
     print("Indexing failed during embedding/upload.")
     print("If you see RESOURCE_EXHAUSTED, switch to another API key/project or wait for quota reset.")
     print(f"Details: {exc}")
+    traceback.print_exc()
     raise SystemExit(1)
 
 print("Vector store created and documents embedded successfully.")
